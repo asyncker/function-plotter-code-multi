@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Graphics</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Consolas',monospace; display:flex; height:100vh; background:#1e1e1e; color:#d4d4d4; }
+  canvas { width:100%; height:100%; cursor:crosshair; }
+  #editor { width:35%; display:flex; flex-direction:column; border-right:2px solid #333; }
+  #graph { width:65%; position:relative; background:#fff; }
+  #editor-header { background:#252526; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; }
+  #editor-header h2 { font-size:14px; color:#4ec9b0; }
+  #run-btn { background:#0e639c; color:white; border:none; padding:6px 20px; cursor:pointer; font-family:inherit; font-size:13px; border-radius:3px; }
+  #run-btn:hover { background:#1177bb; }
+  #code { flex:1; background:#1e1e1e; color:#d4d4d4; border:none; padding:15px; font-family:'Consolas',monospace; font-size:14px; resize:none; outline:none; line-height:1.6; }
+  #controls { position:absolute; top:10px; right:10px; background:rgba(255,255,255,0.95); padding:8px; border-radius:5px; }
+  #controls button { background:#f0f0f0; border:1px solid #ccc; padding:5px 10px; margin:2px; cursor:pointer; border-radius:3px; font-family:inherit; }
+  #info { position:absolute; bottom:10px; left:10px; background:rgba(255,255,255,0.95); padding:8px 12px; border-radius:5px; font-size:12px; color:#333; }
+  #msg { position:absolute; bottom:10px; right:10px; padding:8px 12px; border-radius:5px; font-size:12px; display:none; }
+  #msg.err { background:rgba(255,0,0,0.9); color:white; }
+  #msg.ok { background:rgba(0,200,0,0.9); color:black; }
+</style>
+</head>
+<body>
+<div id="editor">
+  <div id="editor-header">
+    <h2>📝 Editor</h2>
+    <button id="run-btn" onclick="runCode()">▶ RUN</button>
+  </div>
+  <textarea id="code" spellcheck="false">
+primes = primes(20000);
+
+draw.append(x => pix(x, primes));
+
+/*for (let i = 0; i < primes.length / 100; i++) {
+  const p = primes[i];
+  const f = (x) => x > p ? sin(x * (PI / p)) * p : 0;
+  draw.append(x => f(x), { color: randomColor(), width: 1.5 });
+}*/
+
+/*for (let i = 0; i < 10.0; i += 0.05) {
+  let ecolor = randomColor();
+  draw.append(x => sqrt(pow(x, 3) - 2 * x + 2.0 / i), { color: ecolor });
+  draw.append(x => -sqrt(pow(x, 3) - 2 * x + 2.0 / i), { color: ecolor });
+}*/
+</textarea>
+</div>
+<div id="graph">
+  <canvas id="c"></canvas>
+  <div id="controls">
+    <button onclick="resetView()">⌂</button>
+  </div>
+  <div id="info">Graphics: <span id="cnt">0</span> | Scale: <span id="sc">1.0</span></div>
+  <div id="msg"></div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let scale = 50, cx = 0, cy = 0;
+let graphs = [], dragging = false, lx = 0, ly = 0;
+
+const sin=Math.sin, cos=Math.cos, tan=Math.tan, log=Math.log, log2=Math.log2, log10=Math.log10;
+const sqrt=Math.sqrt, abs=Math.abs, exp=Math.exp, pow=Math.pow, PI=Math.PI, E=Math.E;
+const asin=Math.asin, acos=Math.acos, atan=Math.atan, atan2=Math.atan2;
+const sinh=Math.sinh, cosh=Math.cosh, tanh=Math.tanh;
+const floor=Math.floor, ceil=Math.ceil, round=Math.round, sign=Math.sign;
+const min=Math.min, max=Math.max, random=Math.random;
+function primes(n) {
+  const result = [];
+  for (let i = 2; i <= n; i++) {
+    let isPrime = true;
+    for (let j = 2; j * j <= i; j++) {
+      if (i % j === 0) { isPrime = false; break; }
+    }
+    if (isPrime) result.push(i);
+  }
+  return result;
+}
+
+function pix(x, primes) {
+  let left = 0;
+  let right = primes.length - 1;
+  let result = 0;
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    if (primes[mid] <= x) {
+      result = mid + 1;
+      left = mid + 1;
+    } else {
+      right = mid - 1;
+    }
+  }
+  return result;
+}
+
+
+function randomColor() {
+  const h = Math.floor(Math.random()*360);
+  return `hsl(${h},70%,55%)`;
+}
+
+const draw = {
+  append: (fn, opts={}) => {
+    graphs.push({
+      fn,
+      color: opts.color || randomColor(),
+      width: opts.width || 2,
+      opacity: opts.opacity ?? 0.8
+    });
+  },
+  clear: () => { graphs = []; }
+};
+
+function resize() {
+  const p = document.getElementById('graph');
+  canvas.width = p.clientWidth;
+  canvas.height = p.clientHeight;
+  render();
+}
+window.addEventListener('resize', resize);
+
+canvas.addEventListener('mousedown', e => { dragging=true; lx=e.clientX; ly=e.clientY; });
+canvas.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  cx -= (e.clientX-lx)/scale;
+  cy += (e.clientY-ly)/scale;
+  lx=e.clientX; ly=e.clientY;
+  render();
+});
+canvas.addEventListener('mouseup', () => dragging=false);
+canvas.addEventListener('mouseleave', () => dragging=false);
+canvas.addEventListener('wheel', e => { e.preventDefault(); zoom(e.deltaY>0?0.9:1.1); });
+
+function zoom(f) { scale *= f; render(); }
+function resetView() { scale=50; cx=0; cy=0; render(); }
+
+function toScreen(x, y) {
+  return [(x-cx)*scale + canvas.width/2, canvas.height/2 - (y-cy)*scale];
+}
+
+function toMath(px, py) {
+  return [(px - canvas.width/2)/scale + cx, -(py - canvas.height/2)/scale + cy];
+}
+
+function render() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0,0,W,H);
+  const [xMin, yMax] = toMath(0, 0);
+  const [xMax, yMin] = toMath(W, H);
+  let gridStep = 1;
+  const pixelsPerUnit = scale;
+  if (pixelsPerUnit < 20) gridStep = 5;
+  else if (pixelsPerUnit < 40) gridStep = 2;
+  else if (pixelsPerUnit > 200) gridStep = 0.5;
+  else if (pixelsPerUnit > 400) gridStep = 0.25;
+  ctx.strokeStyle = '#2d2d2d';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = Math.floor(xMin/gridStep)*gridStep; x <= xMax; x += gridStep) {
+    const px = (x-cx)*scale + W/2;
+    ctx.moveTo(px, 0);
+    ctx.lineTo(px, H);
+  }
+  for (let y = Math.floor(yMin/gridStep)*gridStep; y <= yMax; y += gridStep) {
+    const py = H/2 - (y-cy)*scale;
+    ctx.moveTo(0, py);
+    ctx.lineTo(W, py);
+  }
+  ctx.stroke();
+  const [axisX_px] = toScreen(0, 0);
+  const [, axisY_px] = toScreen(0, 0);
+  ctx.strokeStyle = '#545454';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  if (axisY_px >= 0 && axisY_px <= H) {
+    ctx.moveTo(0, axisY_px);
+    ctx.lineTo(W, axisY_px);
+    ctx.moveTo(W-12, axisY_px-6);
+    ctx.lineTo(W, axisY_px);
+    ctx.lineTo(W-12, axisY_px+6);
+  }
+  if (axisX_px >= 0 && axisX_px <= W) {
+    ctx.moveTo(axisX_px, H);
+    ctx.lineTo(axisX_px, 0);
+    ctx.moveTo(axisX_px-6, 12);
+    ctx.lineTo(axisX_px, 0);
+    ctx.lineTo(axisX_px+6, 12);
+  }
+  ctx.stroke();
+  ctx.fillStyle = '#555';
+  ctx.font = '11px Consolas';
+  ctx.textAlign = 'center';
+  for (let x = Math.floor(xMin/gridStep)*gridStep; x <= xMax; x += gridStep) {
+    if (Math.abs(x) < 0.001) continue;
+    const px = (x-cx)*scale + W/2;
+    const labelY = Math.max(12, Math.min(H-5, axisY_px + 16));
+    ctx.fillText(parseFloat(x.toFixed(4)).toString(), px, labelY);
+  }
+  
+  ctx.textAlign = 'right';
+  for (let y = Math.floor(yMin/gridStep)*gridStep; y <= yMax; y += gridStep) {
+    if (Math.abs(y) < 0.001) continue;
+    const py = H/2 - (y-cy)*scale;
+    const labelX = Math.max(20, Math.min(W-5, axisX_px - 8));
+    ctx.fillText(parseFloat(y.toFixed(4)).toString(), labelX, py + 4);
+  }
+  
+  if (axisX_px >= 0 && axisX_px <= W && axisY_px >= 0 && axisY_px <= H) {
+    ctx.textAlign = 'right';
+    ctx.fillText('0', axisX_px - 8, axisY_px + 16);
+  }
+  
+  graphs.forEach(g => {
+    ctx.strokeStyle = g.color;
+    ctx.lineWidth = g.width;
+    ctx.globalAlpha = g.opacity;
+    ctx.beginPath();
+    
+    let first = true;
+    let prevPy = null;
+    const step = 1 / scale;
+    for (let px = 0; px <= W; px += 1) {
+      const [x] = toMath(px, 0);
+      try {
+        const y = g.fn(x);
+        if (typeof y !== 'number' || !isFinite(y) || Math.abs(y) > 1e8) {
+          first = true;
+          prevPy = null;
+          continue;
+        }
+        const [, py] = toScreen(x, y);
+        if (prevPy !== null && Math.abs(py - prevPy) > H * 0.8) {
+          first = true;
+        }
+        
+        if (first) {
+          ctx.moveTo(px, py);
+          first = false;
+        } else {
+          ctx.lineTo(px, py);
+        }
+        prevPy = py;
+      } catch(e) {
+        first = true;
+        prevPy = null;
+      }
+    }
+    ctx.stroke();
+  });
+  
+  ctx.globalAlpha = 1;
+  document.getElementById('sc').textContent = (scale/50).toFixed(2);
+}
+
+function showMsg(text, type) {
+  const m = document.getElementById('msg');
+  m.textContent = text;
+  m.className = type;
+  m.style.display = 'block';
+  setTimeout(() => m.style.display = 'none', 3000);
+}
+
+function runCode() {
+  const code = document.getElementById('code').value;
+  graphs = [];
+  try {
+    const fn = new Function('draw','randomColor','sin','cos','tan','log','log2','log10',
+      'sqrt','abs','exp','pow','PI','E','asin','acos','atan','atan2',
+      'sinh','cosh','tanh','floor','ceil','round','sign','min','max','random','primes', 'pix',
+      code);
+    fn(draw, randomColor, sin,cos,tan,log,log2,log10, sqrt,abs,exp,pow,PI,E,
+       asin,acos,atan,atan2, sinh,cosh,tanh, floor,ceil,round,sign,min,max,random,primes,pix);
+    document.getElementById('cnt').textContent = graphs.length;
+    render();
+    showMsg(`✓ Build: ${graphs.length}`, 'ok');
+  } catch(e) {
+    showMsg(`✗ ${e.message}`, 'err');
+  }
+}
+
+document.getElementById('code').addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') runCode();
+});
+
+resize();
+setTimeout(runCode, 100);
+</script>
+</body>
+</html>
