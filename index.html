@@ -36,6 +36,7 @@ primes = primes(20000);
 draw.append(x => pix(x, primes));
 draw.append(x => ceil(x / ln(x)));
 draw.append(x => floor(li(x)));
+draw.append(x => ceil(x / ln(x) + x / pow(ln(x), 2)));
 
 /*for (let i = 0; i < primes.length / 100; i++) {
   const p = primes[i];
