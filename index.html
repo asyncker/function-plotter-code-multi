@@ -2,7 +2,9 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Graphics</title>
+<title>Function Plotter with JS code Multi Graphics</title>
+<meta name="keywords" content="plotter,function,multi,free,plotter,graphics,code">
+<meta name="description" content="Function Plotter - with write JS code free, multi display graphics pix, gamma, special function!">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:'Consolas',monospace; display:flex; height:100vh; background:#1e1e1e; color:#d4d4d4; }
@@ -32,6 +34,8 @@
 primes = primes(20000);
 
 draw.append(x => pix(x, primes));
+draw.append(x => ceil(x / ln(x)));
+draw.append(x => floor(li(x)));
 
 /*for (let i = 0; i < primes.length / 100; i++) {
   const p = primes[i];
@@ -95,6 +99,46 @@ function pix(x, primes) {
   return result;
 }
 
+function li(x) {
+  if (x < 2) return 0;
+  const a = 2;
+  const b = x;
+  const n = 1000;
+  if (b <= a) return 0;
+  const h = (b - a) / n;
+  let sum = 0;
+  const f = (t) => {
+    if (t <= 1) return 0;
+    const ln_t = Math.log(t);
+    if (Math.abs(ln_t) < 1e-10) return 0;
+    return 1 / ln_t;
+  };
+  
+  for (let i = 0; i <= n; i++) {
+    const t = a + i * h;
+    const val = f(t);
+    if (i === 0 || i === n) {
+      sum += val;
+    } else if (i % 2 === 1) {
+      sum += 4 * val;
+    } else {
+      sum += 2 * val;
+    }
+  }
+  
+  return (h / 3) * sum;
+}
+
+function complex(x, y) {
+  return {
+    x, y,
+    add(w) { return complex(this.x + w.x, this.y + w.y); },
+    mul(w) { return complex(this.x * w.x - this.y * w.y, this.x * w.y + this.y * w.x); },
+    mul2(wx, wy) { return complex(this.x * wx - this.y * wy, this.x * wy + this.y * wx); },
+    sq() { return this.mul(this); },
+    scale(k) { return complex(this.x * k, this.y * k); }
+  };
+}
 
 function randomColor() {
   const h = Math.floor(Math.random()*360);
@@ -268,12 +312,12 @@ function runCode() {
   const code = document.getElementById('code').value;
   graphs = [];
   try {
-    const fn = new Function('draw','randomColor','sin','cos','tan','log','log2','log10',
+    const fn = new Function('draw','randomColor','sin','cos','tan','log','ln','log2','log10',
       'sqrt','abs','exp','pow','PI','E','asin','acos','atan','atan2',
-      'sinh','cosh','tanh','floor','ceil','round','sign','min','max','random','primes', 'pix',
+      'sinh','cosh','tanh','floor','ceil','round','sign','min','max','random','primes','pix','li','complex',
       code);
-    fn(draw, randomColor, sin,cos,tan,log,log2,log10, sqrt,abs,exp,pow,PI,E,
-       asin,acos,atan,atan2, sinh,cosh,tanh, floor,ceil,round,sign,min,max,random,primes,pix);
+    fn(draw, randomColor,sin,cos,tan,log,log,log2,log10, sqrt,abs,exp,pow,PI,E,
+       asin,acos,atan,atan2, sinh,cosh,tanh, floor,ceil,round,sign,min,max,random,primes,pix,li,complex);
     document.getElementById('cnt').textContent = graphs.length;
     render();
     showMsg(`✓ Build: ${graphs.length}`, 'ok');
