@@ -179,6 +179,8 @@ function cmul(z, w) { return z.mul(w); }
 function cdiv(z, w) { return z.mul(w.inv()); }
 function cpow(z, w) { return cexp(w.mul(clog(z))); }
 function cdot(z, w) { return z.dot(w); }
+function dot(x, y) { const z = toComplex(x, y); return z.x * z.y + z.x * z.y; }
+function cmulcomp(z, w) { return complex(z.x * w.x, z.y * w.y); }
 
 function cgamma_right(z) {
     const w = complex(z.x - 1.0, z.y);
@@ -197,6 +199,74 @@ function cgamma_right(z) {
 function cgamma_left(z) { return cinv(cmul(csin(z.scale(PI)), cgamma_right(complex(1.0 - z.x, -z.y)))).scale(PI); }
 function cgamma(x, y) { const z = toComplex(x, y); return z.x < 0.5 ? cgamma_left(z) : cgamma_right(z); }
 function cgammaphi(x, y) { const z = toComplex(x, y); return cexp(cmul(z, complex(-3.53102424697, 1.57079632679).add(clog(complex(1.0, 0.0).add(z.scale(-2.0))))).add(clog(z).scale(-0.5)).add(complex(1.4189385332, 0.0))); }
+
+
+
+function czeta_helper_2(z, bases, coeffs) {
+    const phases = [];
+    for (let row = 0; row < 4; row++) {
+        phases[row] = [];
+        for (let col = 0; col < 4; col++) {
+            phases[row][col] = z.y * bases[row][col];
+        }
+    }
+    let resX = 0.0;
+    let resY = 0.0;
+    for (let row = 0; row < 4; row++) {
+      const mags = [];
+      const re = [];
+      const im = [];
+      for (let col = 0; col < 4; col++) {
+        const mag = Math.exp(z.x * bases[row][col]) * coeffs[row][col];
+        mags.push(mag);
+        re.push(Math.cos(phases[row][col]));
+        im.push(Math.sin(phases[row][col]));
+      }
+      let dotRe = 0.0;
+      let dotIm = 0.0;
+      for (let col = 0; col < 4; col++) {
+        dotRe += mags[col] * re[col];
+        dotIm += mags[col] * im[col];
+      }
+      resX += dotRe;
+      resY += dotIm;
+    }
+    return { x: resX, y: resY };
+}
+
+function ceta_right(z) {
+  return cadd(cexp(z), complex(-1.0, 0.0));
+}
+
+function ceta_left(z) {
+  z.x = -z.x;
+  let component_a;
+  const log_r = log(abs(dot(z)));
+  if (z.y > 200.0) {
+    component_a = cmul_i(cexp(complex(z.x + (log_r - 1.0) * z.x - 0.5 * log_r, (log_r - 1.0) * z.y - 0.785398163397))).scale(1.2533141373155);
+  } else if (z.y > 20.0) {
+    const theta = atan(z.y, z.x);
+    component_a = cmul_i(cexp(cmul_i(z).scale(theta - 1.57079632679).add(complex((log_r - 1.0) * z.x - 0.5 * log_r, (log_r - 1.0) * z.y - 0.5 * theta)))).scale(1.2533141373155);
+  } else {
+    component_a = cmul(cgamma(z), csin(z.scale(1.57079632679)));
+  }
+  const zadd1 = complex(z.x + 1.0, z.y);
+  const two_neg_z = cexp(-0.69314718056 * z);
+  const multiplier = cmul(cexp(zadd1.scale(-1.14472988585)), cmul(complex(1.0 - 0.5 * two_neg_z.x, -0.5 * two_neg_z.y), cinv(complex(1.0 - two_neg_z.x, -two_neg_z.y))));
+  const component_b = cmul(z, ceta_right(zadd1));
+  return 2.0 * conj(cmul(cmul(component_a, component_b), multiplier));
+}
+
+function ceta(x, y) {
+  let z = toComplex(x, y);
+  let conjugate_mask = complex(1.0, 1.0);
+  if (z.y < 0.0) { z.y = -z.y; conjugate_mask.y = -1.0; }
+  return cmulcomp(z.x < 0.0 ? ceta_left(z) : ceta_right(z), conjugate_mask);
+}
+
+function czeta(x, y) { const z = toComplex(x, y); return cmul(ceta(z), cinv(cadd(complex(1.0, 0.0), cexp(z.scale(-0.69314718056)).scale(-2.0)))); }
+
+
 
 function randomColor() { const h = Math.floor(Math.random()*360); return `hsl(${h},70%,55%)`; }
 
