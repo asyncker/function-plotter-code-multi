@@ -32,23 +32,23 @@
   </div>
   <textarea id="code" spellcheck="false">
 primes = primes(20000);
-print(x => pix(x, primes));
-print(x => ceil(x / ln(x)));
-print(x => floor(li(x)));
-print(x => ceil(x / ln(x) + x / pow(ln(x), 2)));
+plot(x => pix(x, primes));
+plot(x => ceil(x / ln(x)));
+plot(x => floor(li(x)));
+plot(x => ceil(x / ln(x) + x / pow(ln(x), 2)));
 
-//print(x => cgamma(complex(0, x)).y);
+//plot(x => cgamma(complex(0, x)).y);
 
 /*for (let i = 0; i < primes.length / 100; i++) {
   const p = primes[i];
   const f = (x) => x > p ? sin(x * (PI / p)) * p : 0;
-  print(x => f(x), { color: randomColor(), width: 1.5 });
+  plot(x => f(x), { color: randomColor(), width: 1.5 });
 }*/
 
 /*for (let i = 0; i < 10.0; i += 0.05) {
   let ecolor = randomColor();
-  print(x => sqrt(pow(x, 3) - 2 * x + 2.0 / i), { color: ecolor });
-  print(x => -sqrt(pow(x, 3) - 2 * x + 2.0 / i), { color: ecolor });
+  plot(x => sqrt(pow(x, 3) - 2 * x + 2.0 / i), { color: ecolor });
+  plot(x => -sqrt(pow(x, 3) - 2 * x + 2.0 / i), { color: ecolor });
 }*/
 </textarea>
 </div>
@@ -203,6 +203,8 @@ const print = (fn, opts={}) => {
   });
 };
 
+const plot = print;
+
 function resize() {
   const p = document.getElementById('graph');
   canvas.width = p.clientWidth;
@@ -241,27 +243,74 @@ function render() {
   ctx.fillRect(0, 0, W, H);
   const [xMin, yMax] = toMath(0, 0);
   const [xMax, yMin] = toMath(W, H);
-  let gridStep = 1;
-  const pixelsPerUnit = scale;
-  if (pixelsPerUnit < 20) gridStep = 5;
-  else if (pixelsPerUnit < 40) gridStep = 2;
-  else if (pixelsPerUnit > 200) gridStep = 0.5;
-  else if (pixelsPerUnit > 400) gridStep = 0.25;
-
+  
+  let gridStep;
+  const targetPixels = 60;
+  const rawStep = targetPixels / scale;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const normalized = rawStep / magnitude;
+  if (normalized < 1.5) gridStep = magnitude;
+  else if (normalized < 3.5) gridStep = 2 * magnitude;
+  else if (normalized < 7.5) gridStep = 5 * magnitude;
+  else gridStep = 10 * magnitude;
   ctx.strokeStyle = '#2d2d2d';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1.0;
   ctx.beginPath();
-  for (let x = Math.floor(xMin / gridStep) * gridStep; x <= xMax; x += gridStep) {
+  const startX = Math.ceil(xMin / gridStep) * gridStep;
+  for (let x = startX; x <= xMax; x += gridStep) {
     const px = (x - cx) * scale + W / 2;
+    if (px < -10 || px > W + 10) continue;
     ctx.moveTo(px, 0);
     ctx.lineTo(px, H);
   }
-  for (let y = Math.floor(yMin / gridStep) * gridStep; y <= yMax; y += gridStep) {
+  ctx.stroke();
+  ctx.beginPath();
+  const startY = Math.ceil(yMin / gridStep) * gridStep;
+  for (let y = startY; y <= yMax; y += gridStep) {
     const py = H / 2 - (y - cy) * scale;
+    if (py < -10 || py > H + 10) continue;
     ctx.moveTo(0, py);
     ctx.lineTo(W, py);
   }
   ctx.stroke();
+  const labelStep = gridStep * (scale > 200 ? 1 : scale > 80 ? 2 : 4);
+  ctx.fillStyle = '#777';
+  ctx.font = '11px Consolas';
+  ctx.textAlign = 'center';
+  const [, axisY_px] = toScreen(0, 0);
+  for (let x = Math.ceil(xMin / labelStep) * labelStep; x <= xMax; x += labelStep) {
+    if (Math.abs(x) < 1e-9) continue;
+    const px = (x - cx) * scale + W / 2;
+    if (px < 10 || px > W - 10) continue;
+    const labelY = Math.min(H - 4, Math.max(14, axisY_px + 16));
+    ctx.fillText(parseFloat(x.toFixed(6)).toString(), px, labelY);
+  }
+  ctx.textAlign = 'right';
+  const [axisX_px] = toScreen(0, 0);
+  for (let y = Math.ceil(yMin / labelStep) * labelStep; y <= yMax; y += labelStep) {
+    if (Math.abs(y) < 1e-9) continue;
+    const py = H / 2 - (y - cy) * scale;
+    if (py < 10 || py > H - 10) continue;
+    const labelX = Math.min(W - 4, Math.max(20, axisX_px - 8));
+    ctx.fillText(parseFloat(y.toFixed(6)).toString(), labelX, py + 4);
+  }
+  ctx.strokeStyle = '#545454';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  if (axisY_px >= 0 && axisY_px <= H) {
+    ctx.moveTo(0, axisY_px); ctx.lineTo(W, axisY_px);
+    ctx.moveTo(W-12, axisY_px-5); ctx.lineTo(W, axisY_px); ctx.lineTo(W-12, axisY_px+5);
+  }
+  if (axisX_px >= 0 && axisX_px <= W) {
+    ctx.moveTo(axisX_px, H); ctx.lineTo(axisX_px, 0);
+    ctx.moveTo(axisX_px-5, 12); ctx.lineTo(axisX_px, 0); ctx.lineTo(axisX_px+5, 12);
+  }
+  ctx.stroke();
+  if (axisX_px >= 0 && axisX_px <= W && axisY_px >= 0 && axisY_px <= H) {
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#777';
+    ctx.fillText('0', axisX_px - 8, axisY_px + 16);
+  }
   const W_half = W / 2;
   const H_half = H / 2;
   const inv_scale = 1 / scale;
@@ -286,7 +335,6 @@ function render() {
       if (!first && Math.abs(py - prev_py) > H * 0.8) {
         first = true;
       }
-      
       if (first) {
         ctx.moveTo(px, py);
         first = false;
@@ -298,45 +346,6 @@ function render() {
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
-
-  const [axisX_px] = toScreen(0, 0);
-  const [, axisY_px] = toScreen(0, 0);
-  ctx.strokeStyle = '#545454';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  if (axisY_px >= 0 && axisY_px <= H) {
-    ctx.moveTo(0, axisY_px); ctx.lineTo(W, axisY_px);
-    ctx.moveTo(W-12, axisY_px-6); ctx.lineTo(W, axisY_px); ctx.lineTo(W-12, axisY_px+6);
-  }
-  if (axisX_px >= 0 && axisX_px <= W) {
-    ctx.moveTo(axisX_px, H); ctx.lineTo(axisX_px, 0);
-    ctx.moveTo(axisX_px-6, 12); ctx.lineTo(axisX_px, 0); ctx.lineTo(axisX_px+6, 12);
-  }
-  ctx.stroke();
-  
-  ctx.fillStyle = '#555';
-  ctx.font = '11px Consolas';
-  ctx.textAlign = 'center';
-  for (let x = Math.floor(xMin / gridStep) * gridStep; x <= xMax; x += gridStep) {
-    if (Math.abs(x) < 0.001) continue;
-    const px = (x - cx) * scale + W / 2;
-    const labelY = Math.max(12, Math.min(H - 5, axisY_px + 16));
-    ctx.fillText(parseFloat(x.toFixed(4)).toString(), px, labelY);
-  }
-  
-  ctx.textAlign = 'right';
-  for (let y = Math.floor(yMin / gridStep) * gridStep; y <= yMax; y += gridStep) {
-    if (Math.abs(y) < 0.001) continue;
-    const py = H / 2 - (y - cy) * scale;
-    const labelX = Math.max(20, Math.min(W - 5, axisX_px - 8));
-    ctx.fillText(parseFloat(y.toFixed(4)).toString(), labelX, py + 4);
-  }
-  
-  if (axisX_px >= 0 && axisX_px <= W && axisY_px >= 0 && axisY_px <= H) {
-    ctx.textAlign = 'right';
-    ctx.fillText('0', axisX_px - 8, axisY_px + 16);
-  }
-
   document.getElementById('sc').textContent = (scale / 50).toFixed(2);
 }
 
