@@ -50,6 +50,12 @@ plot(x => ceil(x / ln(x) + x / pow(ln(x), 2)));
   plot(x => sqrt(pow(x, 3) - 2 * x + 2.0 / i), { color: ecolor });
   plot(x => -sqrt(pow(x, 3) - 2 * x + 2.0 / i), { color: ecolor });
 }*/
+
+
+/*for (let k = 0; k < 10.0; k += 0.1) {
+  plot(x => cgammaphi(-k + 1, x).x);
+}*/
+
 </textarea>
 </div>
 <div id="graph">
@@ -138,6 +144,7 @@ function complex(x, y) {
   return {
     x, y,
     add(w) { return complex(this.x + w.x, this.y + w.y); },
+    sub(w) { return complex(this.x - w.x, this.y - w.y); },
     mul(w) { return complex(this.x * w.x - this.y * w.y, this.x * w.y + this.y * w.x); },
     dot(w) { return complex(this.x * w.x + this.y * w.y, this.y * w.x - this.x * w.y); },
     scale(k) { return complex(this.x * k, this.y * k); },
@@ -167,9 +174,11 @@ function cexp(x, y) { const z = toComplex(x, y); const ex = Math.exp(z.x); retur
 function clog(x, y) { const z = toComplex(x, y); return complex(Math.log(z.abs()), Math.atan2(z.y, z.x)); }
 function csin(x, y) { const z = toComplex(x, y); return complex(sin(z.x) * cosh(z.y), cos(z.x) * sinh(z.y)); }
 function cadd(z, w) { return z.add(w); }
+function csub(z, w) { return z.sub(w); }
 function cmul(z, w) { return z.mul(w); }
-function cdot(z, w) { return z.dot(w); }
+function cdiv(z, w) { return z.mul(w.inv()); }
 function cpow(z, w) { return cexp(w.mul(clog(z))); }
+function cdot(z, w) { return z.dot(w); }
 
 function cgamma_right(z) {
     const w = complex(z.x - 1.0, z.y);
@@ -187,7 +196,7 @@ function cgamma_right(z) {
 }
 function cgamma_left(z) { return cinv(cmul(csin(z.scale(PI)), cgamma_right(complex(1.0 - z.x, -z.y)))).scale(PI); }
 function cgamma(x, y) { const z = toComplex(x, y); return z.x < 0.5 ? cgamma_left(z) : cgamma_right(z); }
-function cgammaphi(x, y) { const z = toComplex(x, y); return cexp(cmul(z, complex(-3.53102424697, 1.57079632679).add(clog(complex(1.0, 0.0) - z.scale(2.0)))).add(-0.5 * clog(z)).add(complex(1.4189385332, 0.0))); }
+function cgammaphi(x, y) { const z = toComplex(x, y); return cexp(cmul(z, complex(-3.53102424697, 1.57079632679).add(clog(complex(1.0, 0.0).add(z.scale(-2.0))))).add(clog(z).scale(-0.5)).add(complex(1.4189385332, 0.0))); }
 
 function randomColor() { const h = Math.floor(Math.random()*360); return `hsl(${h},70%,55%)`; }
 
