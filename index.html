@@ -62,6 +62,9 @@ draw.append(x => ceil(x / ln(x) + x / pow(ln(x), 2)));
 </div>
 
 <script>
+const savedCode = localStorage.getItem('plotter_code');
+if (savedCode !== null && savedCode.length >= 6) { document.getElementById('code').value = savedCode; }
+
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 let scale = 50, cx = 0, cy = 0;
@@ -149,6 +152,7 @@ function clog(z) { return complex(Math.log(z.abs()), Math.atan2(z.y, z.x)); }
 function cadd(z, w) { return z.add(w); }
 function cmul(z, w) { return z.mul(w); }
 function csin(z) { return complex(sin(z.x) * cosh(z.y), cos(z.x) * sinh(z.y)); }
+function cpow(z, w) { return cexp(w.mul(clog(z))); }
 
 function cgamma_right(z) {
     const w = complex(z.x - 1.0, z.y);
@@ -337,14 +341,18 @@ function showMsg(text, type) {
 
 function runCode() {
   const code = document.getElementById('code').value;
+  try {
+    localStorage.setItem('plotter_code', code);
+  } catch(e) {}
   graphs = [];
   try {
     const fn = new Function('draw','randomColor','sin','cos','tan','log','ln','log2','log10',
       'sqrt','abs','exp','pow','PI','E','asin','acos','atan','atan2',
-      'sinh','cosh','tanh','floor','ceil','round','sign','min','max','random','primes','pix','li','complex','gamma','csin','cexp','clog',
+      'sinh','cosh','tanh','floor','ceil','round','sign','min','max','random','primes','pix','li','complex',
+      'cgamma','csin','cexp','clog','cinv','cpow',
       code);
     fn(draw, randomColor,sin,cos,tan,log,log,log2,log10, sqrt,abs,exp,pow,PI,E,
-       asin,acos,atan,atan2, sinh,cosh,tanh, floor,ceil,round,sign,min,max,random,primes,pix,li,complex,cgamma,csin,cexp,clog);
+       asin,acos,atan,atan2, sinh,cosh,tanh, floor,ceil,round,sign,min,max,random,primes,pix,li,complex,cgamma,csin,cexp,clog,cinv,cpow);
     document.getElementById('cnt').textContent = graphs.length;
     render();
     showMsg(`✓ Build: ${graphs.length}`, 'ok');
