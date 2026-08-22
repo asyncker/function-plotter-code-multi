@@ -32,11 +32,12 @@
   </div>
   <textarea id="code" spellcheck="false">
 primes = primes(20000);
-
 draw.append(x => pix(x, primes));
 draw.append(x => ceil(x / ln(x)));
 draw.append(x => floor(li(x)));
 draw.append(x => ceil(x / ln(x) + x / pow(ln(x), 2)));
+
+//draw.append(x => cgamma(complex(0, x)).y);
 
 /*for (let i = 0; i < primes.length / 100; i++) {
   const p = primes[i];
@@ -135,11 +136,36 @@ function complex(x, y) {
     x, y,
     add(w) { return complex(this.x + w.x, this.y + w.y); },
     mul(w) { return complex(this.x * w.x - this.y * w.y, this.x * w.y + this.y * w.x); },
-    mul2(wx, wy) { return complex(this.x * wx - this.y * wy, this.x * wy + this.y * wx); },
-    sq() { return this.mul(this); },
-    scale(k) { return complex(this.x * k, this.y * k); }
+    conj() { return complex(this.x, -this.y); },
+    inv() { const denom = this.x * this.x + this.y * this.y; return complex(this.x / denom, -this.y / denom); },
+    scale(k) { return complex(this.x * k, this.y * k); },
+    abs() { return Math.sqrt(this.x * this.x + this.y * this.y); }
   };
 }
+
+function cinv(z) { return z.inv(); }
+function cexp(z) { const ex = Math.exp(z.x); return complex(ex * Math.cos(z.y), ex * Math.sin(z.y)); }
+function clog(z) { return complex(Math.log(z.abs()), Math.atan2(z.y, z.x)); }
+function cadd(z, w) { return z.add(w); }
+function cmul(z, w) { return z.mul(w); }
+function csin(z) { return complex(sin(z.x) * cosh(z.y), cos(z.x) * sinh(z.y)); }
+
+function cgamma_right(z) {
+    const w = complex(z.x - 1.0, z.y);
+    const t = complex(w.x + 7.5, w.y);
+    let x = complex(0.99999999999980993, 0.0);
+    x = x.add(cinv(complex(w.x + 1.0, w.y)).scale(676.5203681218851));
+    x = x.add(cinv(complex(w.x + 2.0, w.y)).scale(-1259.1392167224028));
+    x = x.add(cinv(complex(w.x + 3.0, w.y)).scale(771.32342877765313));
+    x = x.add(cinv(complex(w.x + 4.0, w.y)).scale(-176.61502916214059));
+    x = x.add(cinv(complex(w.x + 5.0, w.y)).scale(12.507343278686905));
+    x = x.add(cinv(complex(w.x + 6.0, w.y)).scale(-0.13857109526572012));
+    x = x.add(cinv(complex(w.x + 7.0, w.y)).scale(9.9843695780195716e-6));
+    x = x.add(cinv(complex(w.x + 8.0, w.y)).scale(1.5056327351493116e-7));
+    return cmul(x, cexp(cadd(cmul(clog(t), complex(0.5 + w.x, w.y)), t.scale(-1.0)))).scale(2.50662827463);
+}
+function cgamma_left(z) { return cinv(cmul(csin(z.scale(PI)), cgamma_right(complex(1.0 - z.x, -z.y)))).scale(PI); }
+function cgamma(z) { return z.x < 0.5 ? cgamma_left(z) : cgamma_right(z); }
 
 function randomColor() {
   const h = Math.floor(Math.random()*360);
@@ -315,10 +341,10 @@ function runCode() {
   try {
     const fn = new Function('draw','randomColor','sin','cos','tan','log','ln','log2','log10',
       'sqrt','abs','exp','pow','PI','E','asin','acos','atan','atan2',
-      'sinh','cosh','tanh','floor','ceil','round','sign','min','max','random','primes','pix','li','complex',
+      'sinh','cosh','tanh','floor','ceil','round','sign','min','max','random','primes','pix','li','complex','gamma','csin','cexp','clog',
       code);
     fn(draw, randomColor,sin,cos,tan,log,log,log2,log10, sqrt,abs,exp,pow,PI,E,
-       asin,acos,atan,atan2, sinh,cosh,tanh, floor,ceil,round,sign,min,max,random,primes,pix,li,complex);
+       asin,acos,atan,atan2, sinh,cosh,tanh, floor,ceil,round,sign,min,max,random,primes,pix,li,complex,cgamma,csin,cexp,clog);
     document.getElementById('cnt').textContent = graphs.length;
     render();
     showMsg(`✓ Build: ${graphs.length}`, 'ok');
