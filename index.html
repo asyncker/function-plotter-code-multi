@@ -164,7 +164,7 @@ function toComplex(a, b) {
     return complex(a, b);
   }
   if (typeof a === 'number' && b === undefined) {
-    return complex(a, 0); // одно число -> действительная часть
+    return complex(a, 0);
   }
   return complex(0, 0);
 }
@@ -204,7 +204,6 @@ function cgamma(x, y) { const z = toComplex(x, y); return z.x < 0.5 ? cgamma_lef
 function cgammaphi(x, y) { const z = toComplex(x, y); return cexp(cmul(z, complex(-3.53102424697, 1.57079632679).add(clog(complex(1.0, 0.0).add(z.scale(-2.0))))).add(clog(z).scale(-0.5)).add(complex(1.4189385332, 0.0))); }
 
 
-
 function czeta_helper_4(z, bases, ns) {
   const z_ = toComplex(z);
   const cutoff = sqrt(z_.y * 0.159154943092) + 100.0 * step(z_.y, 120.0);
@@ -215,7 +214,6 @@ function czeta_helper_4(z, bases, ns) {
     const mags2 = [];
     const re = [];
     const im = [];
-    
     for (let col = 0; col < 4; col++) {
       const mag = Math.exp(z_.x * bases[row][col]);
       const cutoffv = clamp(cutoffscale - 0.884 * ns[row][col], 0.0, 1.0);
@@ -224,7 +222,6 @@ function czeta_helper_4(z, bases, ns) {
       re.push(Math.cos(z_.y * bases[row][col]));
       im.push(Math.sin(z_.y * bases[row][col]));
     }
-    
     let dotRe = 0.0, dotIm = 0.0, dotRe2 = 0.0, dotIm2 = 0.0;
     for (let col = 0; col < 4; col++) {
       dotRe += mags[col] * re[col];
@@ -247,13 +244,11 @@ function czeta_helper_2(z, bases, coeffs) {
     const mags = [];
     const re = [];
     const im = [];
-    
     for (let col = 0; col < 4; col++) {
       mags.push(Math.exp(z_.x * bases[row][col]) * coeffs[row][col]);
       re.push(Math.cos(z_.y * bases[row][col]));
       im.push(Math.sin(z_.y * bases[row][col]));
     }
-    
     for (let col = 0; col < 4; col++) {
       resX += mags[col] * re[col];
       resY += mags[col] * im[col];
@@ -264,10 +259,6 @@ function czeta_helper_2(z, bases, coeffs) {
 
 function czeta_strip(z) {
   const z_ = toComplex(z);
-  const one = complex(1.0, 0.0);
-  const two = complex(2.0, 0.0);
-  const PI = 3.141592653589793;
-
   const bases1 = [
     [-0.69314718056, -1.09861228866811, -1.38629436111989, -1.6094379124341],
     [-1.79175946922805, -1.94591014905531, -2.07944154167984, -2.19722457733622],
@@ -275,12 +266,11 @@ function czeta_strip(z) {
     [-2.63905732961526, -2.70805020110221, -2.77258872223978, -2.83321334405622]
   ];
   const ns1 = [
-    [2, 3, 4, 5],
-    [6, 7, 8, 9],
-    [10, 11, 12, 13],
-    [14, 15, 16, 17]
+    [2.0, 3.0, 4.0, 5.0],
+    [6.0, 7.0, 8.0, 9.0],
+    [10.0, 11.0, 12.0, 13.0],
+    [14.0, 15.0, 16.0, 17.0]
   ];
-  
   const bases2 = [
     [-2.89037175789616, -2.94443897916644, -2.99573227355399, -3.04452243772342],
     [-3.09104245335832, -3.13549421592915, -3.17805383034795, -3.21887582486820],
@@ -288,28 +278,24 @@ function czeta_strip(z) {
     [-3.40119738166216, -3.43398720448515, -3.46573590279973, -3.49650756146648]
   ];
   const ns2 = [
-    [18, 19, 20, 21],
-    [22, 23, 24, 25],
-    [26, 27, 28, 29],
-    [30, 31, 32, 33]
+    [18.0, 19.0, 20.0, 21.0],
+    [22.0, 23.0, 24.0, 25.0],
+    [26.0, 27.0, 28.0, 29.0],
+    [30.0, 31.0, 32.0, 33.0]
   ];
-  
   const zeta_est1 = czeta_helper_4(z_, bases1, ns1);
   const zeta_est2 = czeta_helper_4(z_, bases2, ns2);
   const zetaX = 1.0 + zeta_est1.x + zeta_est2.x;
   const zetaY = 0.0 + zeta_est1.y + zeta_est2.y;
   const zetaX2 = 1.0 + zeta_est1.x2 + zeta_est2.x2;
   const zetaY2 = 0.0 + zeta_est1.y2 + zeta_est2.y2;
-  
   const zetaA = complex(zetaX, zetaY);
   const zetaB = cdot(complex(zetaX2, zetaY2), cgammaphi(complex(1.0 - z_.x, z_.y)));
-  
   if (z_.y < 120.0) {
     const t = 1.0 - Math.min(z_.x, 1.0);
     const alpha = t * t * (3.0 - 2.0 * t);
     return cadd(cscale(zetaA, 1.0 - alpha), cscale(zetaB, alpha));
   }
-  
   return cadd(zetaA, zetaB);
 }
 
@@ -377,8 +363,6 @@ function ceta(x, y) {
 }
 
 function czeta(x, y) { const z = toComplex(x, y); return cmul(ceta(z), cinv(cadd(complex(1.0, 0.0), cexp(z.scale(-0.69314718056)).scale(-2.0)))); }
-
-
 
 function randomColor() { const h = Math.floor(Math.random()*360); return `hsl(${h},70%,55%)`; }
 
