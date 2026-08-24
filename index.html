@@ -175,6 +175,7 @@ function cinv(x, y) { const z = toComplex(x, y); return z.inv(); }
 function cexp(x, y) { const z = toComplex(x, y); const ex = Math.exp(z.x); return complex(ex * Math.cos(z.y), ex * Math.sin(z.y)); }
 function clog(x, y) { const z = toComplex(x, y); return complex(Math.log(z.abs()), Math.atan2(z.y, z.x)); }
 function csin(x, y) { const z = toComplex(x, y); return complex(sin(z.x) * cosh(z.y), cos(z.x) * sinh(z.y)); }
+function ccos(x, y) { const z = toComplex(x, y); return complex(cos(z.x) * cosh(z.y), -sin(z.x) * sinh(z.y)); }
 function cadd(z, w) { return z.add(w); }
 function csub(z, w) { return z.sub(w); }
 function cmul(z, w) { return z.mul(w); }
@@ -364,11 +365,15 @@ function ceta(x, y) {
 
 function czeta(x, y) { const z = toComplex(x, y); return cmul(ceta(z), cinv(cadd(complex(1.0, 0.0), cexp(z.scale(-0.69314718056)).scale(-2.0)))); }
 
-function randomColor() { const h = Math.floor(Math.random()*360); return `hsl(${h},70%,55%)`; }
+function randomColor() { const h = Math.floor(Math.random() * 360); return `hsl(${h},70%,55%)`; }
 
 function extractReal(value) { return value && typeof value === 'object' && 'x' in value && 'y' in value ? value.x : value; }
 
 const print = (fn, opts={}) => {
+  if (Array.isArray(fn)) {
+    const arr = fn;
+    fn = x => (x > arr.length - 1 ? 0 : arr[floor(x)]);
+  }
   const wrappedFn = (x) => extractReal(fn(x));
   graphs.push({
     fn: wrappedFn,
