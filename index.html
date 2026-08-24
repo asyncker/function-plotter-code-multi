@@ -56,6 +56,20 @@ plot(x => ceil(x / ln(x) + x / pow(ln(x), 2)));
   plot(x => cgammaphi(-k + 1, x).x);
 }*/
 
+/*
+function realMandelbrot(c, n) {
+  let z = 0;
+  for (let i = 0; i < n; i++) {
+    z = pow(z, 2) + c;
+    //z = sin(z) + c;
+  }
+  return z;
+}
+
+for (let n = 20; n <= 100; n += 1) {
+  plot(x => -realMandelbrot(x, n));
+}
+*/
 </textarea>
 </div>
 <div id="graph">
