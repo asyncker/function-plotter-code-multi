@@ -377,9 +377,6 @@ function showMsg(text, type) {
 
 function runCode() {
   const code = document.getElementById('code').value;
-  try {
-    localStorage.setItem('plotter_code', code);
-  } catch(e) {}
   graphs = [];
   try {
     const fn = new Function('randomColor','sin','cos','tan','log','ln','log2','log10',
@@ -392,6 +389,9 @@ function runCode() {
     document.getElementById('cnt').textContent = graphs.length;
     render();
     showMsg(`✓ Build: ${graphs.length}`, 'ok');
+    try {
+      localStorage.setItem('plotter_code', code);
+    } catch(e) {}
   } catch(e) {
     showMsg(`✗ ${e.message}`, 'err');
   }
