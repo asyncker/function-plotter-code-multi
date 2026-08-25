@@ -298,7 +298,6 @@ function render() {
   ctx.fillRect(0, 0, W, H);
   const [xMin, yMax] = toMath(0, 0);
   const [xMax, yMin] = toMath(W, H);
-  
   let gridStep;
   const targetPixels = 60;
   const rawStep = targetPixels / scale;
@@ -318,8 +317,6 @@ function render() {
     ctx.moveTo(px, 0);
     ctx.lineTo(px, H);
   }
-  ctx.stroke();
-  ctx.beginPath();
   const startY = Math.ceil(yMin / gridStep) * gridStep;
   for (let y = startY; y <= yMax; y += gridStep) {
     const py = H / 2 - (y - cy) * scale;
@@ -330,7 +327,6 @@ function render() {
   ctx.stroke();
   const labelStep = gridStep * (scale > 200 ? 1 : scale > 80 ? 2 : 4);
   ctx.fillStyle = '#777';
-  ctx.font = '11px Consolas';
   ctx.textAlign = 'center';
   const [, axisY_px] = toScreen(0, 0);
   for (let x = Math.ceil(xMin / labelStep) * labelStep; x <= xMax; x += labelStep) {
@@ -354,52 +350,69 @@ function render() {
   ctx.beginPath();
   if (axisY_px >= 0 && axisY_px <= H) {
     ctx.moveTo(0, axisY_px); ctx.lineTo(W, axisY_px);
-    ctx.moveTo(W-12, axisY_px-5); ctx.lineTo(W, axisY_px); ctx.lineTo(W-12, axisY_px+5);
   }
   if (axisX_px >= 0 && axisX_px <= W) {
     ctx.moveTo(axisX_px, H); ctx.lineTo(axisX_px, 0);
-    ctx.moveTo(axisX_px-5, 12); ctx.lineTo(axisX_px, 0); ctx.lineTo(axisX_px+5, 12);
   }
   ctx.stroke();
-  if (axisX_px >= 0 && axisX_px <= W && axisY_px >= 0 && axisY_px <= H) {
-    ctx.textAlign = 'right';
-    ctx.fillStyle = '#777';
-    ctx.fillText('0', axisX_px - 8, axisY_px + 16);
-  }
   const W_half = W / 2;
   const H_half = H / 2;
   const inv_scale = 1 / scale;
-  const max_y = 1e8;
-  const step = 2; 
+  function findDomainEdge(fn, xValid, xInvalid) {
+    let a = xValid, b = xInvalid;
+    for (let i = 0; i < 16; i++) {
+      const mid = (a + b) * 0.5;
+      if (Number.isFinite(fn(mid))) a = mid;
+      else b = mid;
+    }
+    return a;
+  }
+
   for (let g = 0; g < graphs.length; g++) {
     const g_fn = graphs[g].fn;
     ctx.strokeStyle = graphs[g].color;
     ctx.lineWidth = graphs[g].width;
     ctx.globalAlpha = graphs[g].opacity;
     ctx.beginPath();
-    let first = true;
-    let prev_py = -999999;
-    for (let px = 0; px < W; px += step) {
+    let inPath = false;
+    let prevPx = 0, prevPy = 0, prevX = 0, prevY = 0;
+    for (let px = 0; px <= W; px++) {
       const x = (px - W_half) * inv_scale + cx;
       const y = g_fn(x);
-      if (y !== y || y === Infinity || y === -Infinity || y > max_y || y < -max_y) {
-        first = true;
-        continue;
-      }
-      const py = H_half - (y - cy) * scale;
-      if (!first && Math.abs(py - prev_py) > H * 0.8) {
-        first = true;
-      }
-      if (first) {
-        ctx.moveTo(px, py);
-        first = false;
+      const isValid = Number.isFinite(y);
+      if (isValid) {
+        const py = H_half - (y - cy) * scale;
+        if (!inPath) {
+          const prevX_math = ((px - 1) - W_half) * inv_scale + cx;
+          const edgeX = findDomainEdge(g_fn, x, prevX_math);
+          const edgePx = (edgeX - cx) * scale + W_half;
+          const edgeY = g_fn(edgeX);
+          const edgePy = H_half - ((Number.isFinite(edgeY) ? edgeY : 0) - cy) * scale;
+          ctx.moveTo(edgePx, edgePy);
+          ctx.lineTo(px, py);
+          inPath = true;
+        } else {
+          if (Math.abs(py - prevPy) > H * 0.8 && Math.sign(y) !== Math.sign(prevY)) {
+            ctx.moveTo(px, py);
+          } else {
+            ctx.lineTo(px, py);
+          }
+        }
+        prevPx = px; prevPy = py; prevX = x; prevY = y;
       } else {
-        ctx.lineTo(px, py);
+        if (inPath) {
+          const edgeX = findDomainEdge(g_fn, prevX, x);
+          const edgePx = (edgeX - cx) * scale + W_half;
+          const edgeY = g_fn(edgeX);
+          const edgePy = H_half - ((Number.isFinite(edgeY) ? edgeY : 0) - cy) * scale;
+          ctx.lineTo(edgePx, edgePy);
+          inPath = false;
+        }
       }
-      prev_py = py;
     }
     ctx.stroke();
   }
+
   ctx.globalAlpha = 1;
   document.getElementById('sc').textContent = (scale / 50).toFixed(2);
 }
