@@ -135,6 +135,40 @@ function primes(n) {
   return result;
 }
 
+function btn(minusKey, plusKey) {
+  let value = 0;
+  const minusBtn = document.getElementById(minusKey) || document.querySelector(`[data-key="${minusKey}"]`);
+  const plusBtn = document.getElementById(plusKey) || document.querySelector(`[data-key="${plusKey}"]`);
+  const getBtn = (key) => {
+    const el = document.getElementById(key);
+    if (el) return el;
+    return {
+      addEventListener: (event, handler) => {
+        document.addEventListener('keydown', (e) => {
+          if (e.key === key) handler(e);
+        });
+      }
+    };
+  };
+  const minus = getBtn(minusKey);
+  const plus = getBtn(plusKey);
+  const num = () => value;
+  num.valueOf = () => value;
+  num.toString = () => String(value);
+  const update = (newVal) => {
+    value = newVal;
+    if (window.render) window.render(value);
+    return value;
+  };
+  minus.addEventListener('click', () => update(value - 1));
+  plus.addEventListener('click', () => update(value + 1));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === minusKey) update(value - 1);
+    if (e.key === plusKey) update(value + 1);
+  });
+  return num;
+}
+
 function pix(x, primes) {
   let left = 0;
   let right = primes.length - 1;
@@ -212,16 +246,15 @@ function cmul_i(x, y) { const z = toComplex(x, y); return complex(-z.y, z.x); }
 function conj(x, y) { const z = toComplex(x, y); return complex(z.x, -z.y); }
 function cinv(x, y) { const z = toComplex(x, y); return z.inv(); }
 function cexp(x, y) { const z = toComplex(x, y); const ex = Math.exp(z.x); return complex(ex * Math.cos(z.y), ex * Math.sin(z.y)); }
-function clog(x, y) { const z = toComplex(x, y); return complex(Math.log(z.abs()), Math.atan2(z.y, z.x)); }
-function csin(x, y) { const z = toComplex(x, y); return complex(sin(z.x) * cosh(z.y), cos(z.x) * sinh(z.y)); }
-function ccos(x, y) { const z = toComplex(x, y); return complex(cos(z.x) * cosh(z.y), -sin(z.x) * sinh(z.y)); }
+function clog(x, y) { const z = toComplex(x, y); return complex(Math.log(z.x * z.x + z.y * z.y) * 0.5, Math.atan2(z.y, z.x)); }
+function csin(x, y) { const z = toComplex(x, y); return complex(Math.sin(z.x) * Math.cosh(z.y), Math.cos(z.x) * Math.sinh(z.y)); }
+function ccos(x, y) { const z = toComplex(x, y); return complex(Math.cos(z.x) * Math.cosh(z.y), -Math.sin(z.x) * Math.sinh(z.y)); }
 function cadd(z, w) { return z.add(w); }
 function csub(z, w) { return z.sub(w); }
 function cmul(z, w) { return z.mul(w); }
 function cdiv(z, w) { return z.mul(w.inv()); }
 function cpow(z, w) { return cexp(w.mul(clog(z))); }
 function cdot(z, w) { return z.dot(w); }
-function dot(x, y) { const z = toComplex(x, y); return z.x * z.y + z.x * z.y; }
 function cmulcomp(z, w) { return complex(z.x * w.x, z.y * w.y); }
 function cscale(z, k) { return z.scale(k); }
 
@@ -229,17 +262,17 @@ function cgamma_right(z) {
     const w = complex(z.x - 1.0, z.y);
     const t = complex(w.x + 7.5, w.y);
     let x = complex(0.99999999999980993, 0.0);
-    x = x.add(cinv(complex(w.x + 1.0, w.y)).scale(676.5203681218851));
-    x = x.add(cinv(complex(w.x + 2.0, w.y)).scale(-1259.1392167224028));
-    x = x.add(cinv(complex(w.x + 3.0, w.y)).scale(771.32342877765313));
-    x = x.add(cinv(complex(w.x + 4.0, w.y)).scale(-176.61502916214059));
-    x = x.add(cinv(complex(w.x + 5.0, w.y)).scale(12.507343278686905));
-    x = x.add(cinv(complex(w.x + 6.0, w.y)).scale(-0.13857109526572012));
-    x = x.add(cinv(complex(w.x + 7.0, w.y)).scale(9.9843695780195716e-6));
-    x = x.add(cinv(complex(w.x + 8.0, w.y)).scale(1.5056327351493116e-7));
+    x = x.add(complex(w.x + 1.0, w.y).inv().scale(676.5203681218851));
+    x = x.add(complex(w.x + 2.0, w.y).inv().scale(-1259.1392167224028));
+    x = x.add(complex(w.x + 3.0, w.y).inv().scale(771.32342877765313));
+    x = x.add(complex(w.x + 4.0, w.y).inv().scale(-176.61502916214059));
+    x = x.add(complex(w.x + 5.0, w.y).inv().scale(12.507343278686905));
+    x = x.add(complex(w.x + 6.0, w.y).inv().scale(-0.13857109526572012));
+    x = x.add(complex(w.x + 7.0, w.y).inv().scale(9.9843695780195716e-6));
+    x = x.add(complex(w.x + 8.0, w.y).inv().scale(1.5056327351493116e-7));
     return cmul(x, cexp(cadd(cmul(clog(t), complex(0.5 + w.x, w.y)), t.scale(-1.0)))).scale(2.50662827463);
 }
-function cgamma_left(z) { return cinv(cmul(csin(z.scale(PI)), cgamma_right(complex(1.0 - z.x, -z.y)))).scale(PI); }
+function cgamma_left(z) { return (cmul(csin(z.scale(Math.PI)), cgamma_right(complex(1.0 - z.x, -z.y)))).inv().scale(Math.PI); }
 function cgamma(x, y) { const z = toComplex(x, y); return z.x < 0.5 ? cgamma_left(z) : cgamma_right(z); }
 
 function randomColor() { const h = Math.floor(Math.random() * 360); return `hsl(${h},70%,55%)`; }
