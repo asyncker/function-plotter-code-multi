@@ -123,16 +123,217 @@ const step = (edge, x) => x >= edge ? 1.0 : 0.0;
 const clamp = (v, mn, mx) => Math.max(mn, Math.min(mx, v));
 const clip_min = (x) => Math.min(x, 0);
 const clip_max = (x) => Math.max(x, 0);
+function gcd(a, b) {
+    while (b) {
+        [a, b] = [b, a % b];
+    }
+    return a;
+}
 function primes(n) {
-  const result = [];
+  const seq = [];
   for (let i = 2; i <= n; i++) {
     let isPrime = true;
     for (let j = 2; j * j <= i; j++) {
       if (i % j === 0) { isPrime = false; break; }
     }
-    if (isPrime) result.push(i);
+    if (isPrime) { seq.push(i); }
+  }
+  return seq;
+}
+
+function factorial(n) {
+    if (n <= 0) return [];
+    const seq = [1];
+    for (let i = 2; i <= n; i++) {
+        seq.push(seq[seq.length - 1] * i);
+    }
+    return seq;
+}
+
+function fib(n) {
+  if (n <= 0) return [];
+  if (n === 1) return [0];
+  const seq = [0, 1];
+  for (let i = 2; i < n; i++) {
+    seq.push(seq[i - 1] + seq[i - 2]);
+  }
+  return seq;
+}
+
+function mersenne(n) {
+  const seq = [];
+  for (let i = 1; i <= n; i++) {
+    seq.push(Math.pow(2, i) - 1);
+  }
+  return seq;
+}
+
+function geometric(start, ratio, count) {
+  const seq = [];
+  for (let i = 0; i < count; i++) {
+    seq.push(Math.pow(ratio, i) * start);
+  }
+  return seq;
+}
+
+function arithmetic(start, diff, count) {
+  const seq = [];
+  for (let i = 0; i < count; i++) {
+    seq.push(start + i * diff);
+  }
+  return seq;
+}
+
+function primePolynomial(n, coff1, coff2, coff3) { /// 11, 17, 41
+  const seq = [];
+  for (let i = 0; i <= n; i++) {
+    seq.push(coff1 * i * i + coff2 * i + coff3);
+  }
+  return seq;
+}
+
+function catalan(n) {
+  if (n <= 0) return [];
+  const seq = [1];
+  for (let i = 1; i < n; i++) {
+    seq.push(seq[i-1] * 2 * (2 * i - 1) / (i + 1));
+  }
+  return seq;
+}
+
+function eulerTotient(n) {
+    const seq = [];
+    for (let i = 1; i <= n; i++) {
+        let count = 0;
+        for (let j = 1; j <= i; j++) {
+            if (gcd(i, j) === 1) count++;
+        }
+        seq.push(count);
+    }
+    return seq;
+}
+
+function binomial(n, k) {
+  if (k < 0 || k > n) return 0;
+  let result = 1;
+  for (let i = 1; i <= k; i++) {
+    result = result * (n - i + 1) / i;
   }
   return result;
+}
+
+function bell(n) {
+  if (n <= 0) return [];
+  const seq = [1];
+  for (let i = 1; i < n; i++) {
+    let prev = seq[i-1];
+    let sum = 0;
+    for (let j = 0; j < i; j++) {
+      sum += binomial(i-1, j) * seq[j];
+    }
+    seq.push(sum);
+  }
+  return seq;
+}
+
+function lucas(n) {
+  if (n <= 0) return [];
+  if (n === 1) return [2];
+  const seq = [2, 1];
+  for (let i = 2; i < n; i++) {
+    seq.push(seq[i-1] + seq[i-2]);
+  }
+  return seq;
+}
+
+function tribonacci(n) { //n-bonacci
+  if (n <= 0) return [];
+  if (n === 1) return [0];
+  if (n === 2) return [0, 1];
+  const seq = [0, 1, 1];
+  for (let i = 3; i < n; i++) {
+    seq.push(seq[i-1] + seq[i-2] + seq[i-3]);
+  }
+  return seq;
+}
+
+function pell(n) {
+  if (n <= 0) return [];
+  if (n === 1) return [0];
+  const seq = [0, 1];
+  for (let i = 2; i < n; i++) {
+    seq.push(2 * seq[i-1] + seq[i-2]);
+  }
+  return seq;
+}
+
+function golomb(n) {
+  if (n <= 0) return [];
+  const seq = [1, 2, 2];
+  for (let i = 3; i < n; i++) {
+    let count = 0;
+    for (let j = 0; j < seq[i-1]; j++) {
+      count++;
+    }
+    seq.push(count);
+  }
+  return seq;
+}
+
+function stirlingSecond(n, k) {
+  if (k === 0 || k > n) return 0;
+  if (k === 1 || k === n) return 1;
+  const dp = Array.from({length: n+1}, () => Array(k+1).fill(0));
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= Math.min(i, k); j++) {
+      if (j === 1 || j === i) {
+        dp[i][j] = 1;
+      } else {
+        dp[i][j] = j * dp[i-1][j] + dp[i-1][j-1];
+      }
+    }
+  }
+  return dp[n][k];
+}
+
+function collatz(n) {
+  if (n <= 0) return [];
+  const seq = [n];
+  while (n !== 1) {
+    if (n % 2 === 0) { n = n / 2; }
+    else { n = (3 * n + 1); } // /2
+    seq.push(n);
+  }
+  return seq;
+}
+
+function perfectNumbers(limit) {
+  const seq = [];
+  for (let n = 2; n <= limit; n++) {
+    let sum = 1;
+    for (let i = 2; i * i <= n; i++) {
+      if (n % i === 0) {
+        sum += i;
+        if (i !== n / i) sum += n / i;
+      }
+    }
+    if (sum === n && n > 1) seq.push(n);
+  }
+  return seq;
+}
+
+function armstrongNumbers(limit) {
+  const seq = [];
+  for (let n = 0; n <= limit; n++) {
+    const str = String(n);
+    const len = str.length;
+    let sum = 0;
+    for (const digit of str) {
+      sum += Math.pow(parseInt(digit), len);
+    }
+    if (sum === n) seq.push(n);
+  }
+  return seq;
 }
 
 function btn(minusKey, plusKey) {
@@ -199,7 +400,6 @@ function li(x) {
     if (Math.abs(ln_t) < 1e-10) return 0;
     return 1 / ln_t;
   };
-  
   for (let i = 0; i <= n; i++) {
     const t = a + i * h;
     const val = f(t);
