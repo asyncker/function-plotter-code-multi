@@ -121,8 +121,8 @@ const floor=Math.floor, ceil=Math.ceil, round=Math.round, sign=Math.sign;
 const min=Math.min, max=Math.max, random=Math.random;
 const step = (edge, x) => x >= edge ? 1.0 : 0.0;
 const clamp = (v, mn, mx) => Math.max(mn, Math.min(mx, v));
-const clip_min = (x) => Math.min(x, 0);
-const clip_max = (x) => Math.max(x, 0);
+const relumin = (x) => Math.min(x, 0);
+const relumax = (x) => Math.max(x, 0);
 function gcd(a, b) {
     while (b) {
         [a, b] = [b, a % b];
