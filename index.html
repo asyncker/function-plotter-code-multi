@@ -121,8 +121,8 @@ const floor=Math.floor, ceil=Math.ceil, round=Math.round, sign=Math.sign;
 const min=Math.min, max=Math.max, random=Math.random;
 const step = (edge, x) => x >= edge ? 1.0 : 0.0;
 const clamp = (v, mn, mx) => Math.max(mn, Math.min(mx, v));
-const relumin = (x) => Math.min(x, 0);
-const relumax = (x) => Math.max(x, 0);
+const relumin = (x) => x >= 0 ? undefined : x;
+const relumax = (x) => x <= 0 ? undefined : x;
 function gcd(a, b) {
     while (b) {
         [a, b] = [b, a % b];
@@ -145,9 +145,31 @@ function factorial(n) {
     if (n <= 0) return [];
     const seq = [1];
     for (let i = 2; i <= n; i++) {
-        seq.push(seq[seq.length - 1] * i);
+      seq.push(seq[seq.length - 1] * i);
     }
     return seq;
+}
+
+function isprime(x) {
+    if (x < 2) { return false; }
+    if (x <= 3) { return true; }
+    if (x % 2 === 0 || x % 3 === 0) { return false; }
+    for (let i = 5; i * i <= x; i += 6) {
+        if (x % i === 0 || x % (i + 2) === 0) {
+          return false;
+        }
+    }
+    return true;
+}
+
+// According to this logic, almost all functions can be turned into prime versions. like fib-prime or mersenne-prime with add condition
+function primorial(n) {
+  if (n <= 0) return [];
+  const seq = [1];
+  for (let i = 2; i <= n; i++) {
+    if (isprime(i)) { seq.push(seq[seq.length - 1] * i); }
+  }
+  return seq;
 }
 
 function fib(n) {
@@ -473,7 +495,31 @@ function cgamma_right(z) {
     return cmul(x, cexp(cadd(cmul(clog(t), complex(0.5 + w.x, w.y)), t.scale(-1.0)))).scale(2.50662827463);
 }
 function cgamma_left(z) { return (cmul(csin(z.scale(Math.PI)), cgamma_right(complex(1.0 - z.x, -z.y)))).inv().scale(Math.PI); }
-function cgamma(x, y) { const z = toComplex(x, y); return z.x < 0.5 ? cgamma_left(z) : cgamma_right(z); }
+function cgamma(x, y) { let z = toComplex(x, y); z = complex(z.x + 1.0, z.y); return z.x < 0.5 ? cgamma_left(z) : cgamma_right(z); }
+
+const EULER_GAMMA = 0.5772156649015329;
+function cgammaw(x, y) {
+  let z = toComplex(x, y); z = complex(z.x + 1.0, z.y);
+  const one = complex(1.0, 0.0);
+  let result = cmul(z, cexp(z.scale(EULER_GAMMA)));
+  for (let n = 1; n <= 256; n++) {
+    const invn = 1.0 / n;
+    result = cmul(result, cmul(z.scale(invn).add(one), cexp(z.scale(-invn))));
+  }
+  return result.inv();
+}
+
+function cgammap(x, y) {
+  let z = toComplex(x, y); z = complex(z.x + 1.0, z.y);
+  const one = complex(1.0, 0.0);
+  let result = cmul(z, cexp(z.scale(EULER_GAMMA)));
+  const primesv = primes(256);
+  for (let n = 0; n < primesv.length; n++) {
+    const invn = 1.0 / primesv[n];
+    result = cmul(result, cmul(z.scale(invn).add(one), cexp(z.scale(-invn))));
+  }
+  return result.inv();
+}
 
 function randomColor() { const h = Math.floor(Math.random() * 360); return `hsl(${h},70%,55%)`; }
 
@@ -502,7 +548,6 @@ function resize() {
   render();
 }
 window.addEventListener('resize', resize);
-
 canvas.addEventListener('mousedown', e => { dragging=true; lx=e.clientX; ly=e.clientY; });
 canvas.addEventListener('mousemove', e => {
   if (!dragging) return;
@@ -517,14 +562,8 @@ canvas.addEventListener('wheel', e => { e.preventDefault(); zoom(e.deltaY>0?0.9:
 
 function zoom(f) { scale *= f; render(); }
 function resetView() { scale=50; cx=0; cy=0; render(); }
-
-function toScreen(x, y) {
-  return [(x-cx)*scale + canvas.width/2, canvas.height/2 - (y-cy)*scale];
-}
-
-function toMath(px, py) {
-  return [(px - canvas.width/2)/scale + cx, -(py - canvas.height/2)/scale + cy];
-}
+function toScreen(x, y) { return [(x-cx)*scale + canvas.width/2, canvas.height/2 - (y-cy)*scale]; }
+function toMath(px, py) { return [(px - canvas.width/2)/scale + cx, -(py - canvas.height/2)/scale + cy]; }
 
 function render() {
   const W = canvas.width, H = canvas.height;
