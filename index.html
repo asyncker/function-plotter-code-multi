@@ -9,8 +9,8 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:'Consolas',monospace; display:flex; height:100vh; background:#1e1e1e; color:#d4d4d4; }
   canvas { width:100%; height:100%; cursor:crosshair; display:block; }
-  #editor { width:35%; display:flex; flex-direction:column; border-right:2px solid #333; }
-  #graph { width:65%; position:relative; background:#fff; }
+  #editor { width:25%; display:flex; flex-direction:column; border-right:2px solid #333; }
+  #graph { width:75%; position:relative; background:#fff; }
   #editor-header { background:#252526; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; }
   #editor-header h2 { font-size:14px; color:#4ec9b0; }
   #run-btn { background:#0e639c; color:white; border:none; padding:6px 20px; cursor:pointer; font-family:inherit; font-size:13px; border-radius:3px; }
@@ -29,7 +29,7 @@
 <body>
 <div id="editor">
   <div id="editor-header">
-    <h2>📝 Editor</h2>
+    <h2>Editor</h2>
     <button id="run-btn" onclick="runCode()">▶ RUN</button>
   </div>
   <textarea id="code" spellcheck="false">
@@ -94,8 +94,8 @@ function toggleEditor() {
   editorVisible = !editorVisible;
   if (editorVisible) {
     editor.style.display = 'flex';
-    editor.style.width = '35%';
-    graph.style.width = '65%';
+    editor.style.width = '25%';
+    graph.style.width = '75%';
     btn.textContent = '◀';
   } else {
     editor.style.display = 'none';
