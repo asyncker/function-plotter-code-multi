@@ -1,6 +1,9 @@
 # function-plotter-code-multi
 Function Flotter with JS code multi-graphics (prime numbers, pi(x) and special function)
 
+Create your multi 1d graphics! <br />
+https://asyncker.github.io/function-plotter-code-multi/index.html
+
 Gamma waves:
 ```
 for (let i = 0; i < 10.0; i += 0.05) {
