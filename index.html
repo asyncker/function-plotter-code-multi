@@ -34,13 +34,13 @@
   </div>
   <textarea id="code" spellcheck="false">
 primes = primes(200000);
-plot(x => pix(x, primes));
+plot(count(primes));
 plot(x => ceil(x / ln(x)));
 plot(x => ceil(x / ln(x) + x / pow(ln(x), 2)));
 plot(x => floor(li(x)));
 plot(x => Math.ceil(x / (ln(x) - 1)));
 maybeprimes = maybePrimes(200000, []);
-plot(x => pix(x, maybeprimes));
+plot(count(maybeprimes));
 
 //plot(x => cgamma(complex(0, x)).y);
 
@@ -425,18 +425,18 @@ function maybePrimes(n, primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41
   return arr;
 }
 
-function pix(x, primes) {
-  let left = 0;
-  let right = primes.length - 1;
-  let result = 0;
-  while (left <= right) {
-    const mid = Math.floor((left + right) / 2);
-    if (primes[mid] <= x) {
-      result = mid + 1;
-      left = mid + 1;
-    } else {
-      right = mid - 1;
+function count(arr) {
+  const max = Math.max(...arr);
+  const sorted = [...arr].sort((a, b) => a - b);
+  const result = [];
+  let countv = 0;
+  let idx = 0;
+  for (let i = 0; i <= max; i++) {
+    while (idx < sorted.length && sorted[idx] <= i) {
+      countv++;
+      idx++;
     }
+    result.push(countv);
   }
   return result;
 }
@@ -738,11 +738,11 @@ function runCode() {
   try {
     const fn = new Function('randomColor','sin','cos','tan','log','ln','log2','log10',
       'sqrt','abs','exp','pow','PI','E','asin','acos','atan','atan2',
-      'sinh','cosh','tanh','floor','ceil','round','sign','min','max','random','primes','pix','li','complex',
+      'sinh','cosh','tanh','floor','ceil','round','sign','min','max','random','primes','count','li','complex',
       'cgamma','csin','cexp','clog','cinv','cpow',
       code);
     fn(randomColor,sin,cos,tan,log,log,log2,log10,sqrt,abs,exp,pow,PI,E,
-       asin,acos,atan,atan2, sinh,cosh,tanh, floor,ceil,round,sign,min,max,random,primes,pix,li,complex,cgamma,csin,cexp,clog,cinv,cpow);
+       asin,acos,atan,atan2, sinh,cosh,tanh, floor,ceil,round,sign,min,max,random,primes,count,li,complex,cgamma,csin,cexp,clog,cinv,cpow);
     document.getElementById('cnt').textContent = graphs.length;
     render();
     showMsg(`✓ Build: ${graphs.length}`, 'ok');
