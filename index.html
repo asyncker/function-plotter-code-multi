@@ -38,6 +38,8 @@ plot(x => pix(x, primes));
 plot(x => ceil(x / ln(x)));
 plot(x => floor(li(x)));
 plot(x => ceil(x / ln(x) + x / pow(ln(x), 2)));
+maybeprimes = maybePrimes(200000, []);
+plot(x => pix(x, maybeprimes));
 
 //plot(x => cgamma(complex(0, x)).y);
 
@@ -390,6 +392,36 @@ function btn(minusKey, plusKey) {
     if (e.key === plusKey) update(value + 1);
   });
   return num;
+}
+
+const SEED = Math.random();
+function rand(n) {
+  let x = (n * 374761393 + SEED * 668265263) >>> 0;
+  x = ((x ^ (x >>> 13)) * 1274126177) >>> 0;
+  x = (x ^ (x >>> 16)) >>> 0;
+  return x / 4294967296;
+}
+
+function isMaybePrime(n, primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]) {
+  const num = Math.ceil(Math.abs(n));
+  if (num <= 1) return false;
+  if (primes.includes(num)) return true;
+  for (const prime of primes) {
+    if (num % prime === 0) return false;
+  }
+  let W = 1;
+  for (const prime of primes) {
+    W *= (1 - 1 / prime);
+  }
+  return rand(n) < 1 / Math.log(num) / W;
+}
+
+function maybePrimes(n, primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]){
+  let arr = [];
+  for (let i = 0; i < n; i++) { 
+    if (isMaybePrime(i, primes)) { arr.push(i) }
+  }
+  return arr;
 }
 
 function pix(x, primes) {
