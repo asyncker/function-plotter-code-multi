@@ -33,11 +33,12 @@
     <button id="run-btn" onclick="runCode()">▶ RUN</button>
   </div>
   <textarea id="code" spellcheck="false">
-primes = primes(20000);
+primes = primes(200000);
 plot(x => pix(x, primes));
 plot(x => ceil(x / ln(x)));
-plot(x => floor(li(x)));
 plot(x => ceil(x / ln(x) + x / pow(ln(x), 2)));
+plot(x => floor(li(x)));
+plot(x => Math.ceil(x / (ln(x) - 1)));
 maybeprimes = maybePrimes(200000, []);
 plot(x => pix(x, maybeprimes));
 
