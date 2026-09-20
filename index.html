@@ -227,15 +227,15 @@ function catalan(n) {
 }
 
 function eulerTotient(n) {
-    const seq = [];
-    for (let i = 1; i <= n; i++) {
-        let count = 0;
-        for (let j = 1; j <= i; j++) {
-            if (gcd(i, j) === 1) count++;
-        }
-        seq.push(count);
+  const seq = [];
+  for (let i = 1; i <= n; i++) {
+    let count = 0;
+    for (let j = 1; j <= i; j++) {
+      if (gcd(i, j) === 1) count++;
     }
-    return seq;
+    seq.push(count);
+  }
+  return seq;
 }
 
 function binomial(n, k) {
@@ -426,7 +426,9 @@ function maybePrimes(n, primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41
 }
 
 function count(arr) {
-  const max = Math.max(...arr);
+  if (!arr.length) return [];
+  const max = arr.reduce((m, x) => (x > m ? x : m), -Infinity);
+  if (!Number.isFinite(max)) throw new Error('max is not finite');
   const sorted = [...arr].sort((a, b) => a - b);
   const result = [];
   let countv = 0;
@@ -437,6 +439,27 @@ function count(arr) {
       idx++;
     }
     result.push(countv);
+  }
+  return result;
+}
+
+function acount(countArr) {
+  if (!countArr.length) return [];
+  const result = [];
+  for (let i = 0; i < countArr.length; i++) {
+    const prev = i === 0 ? 0 : countArr[i - 1];
+    const freq = countArr[i] - prev;
+    for (let k = 0; k < freq; k++) {
+      result.push(i);
+    }
+  }
+  return result;
+}
+
+function toarray(f, n = 200000, start = 0) {
+  const result = [];
+  for (let i = 0; i < n; i++) {
+    result.push(f(start + i));
   }
   return result;
 }
