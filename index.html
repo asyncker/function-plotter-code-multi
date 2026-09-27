@@ -33,13 +33,14 @@
     <button id="run-btn" onclick="runCode()">▶ RUN</button>
   </div>
   <textarea id="code" spellcheck="false">
-primes = primes(200000);
+const maxn = 200000;
+primes = primes(maxn);
 plot(count(primes));
 plot(x => ceil(x / ln(x)));
 plot(x => ceil(x / ln(x) + x / pow(ln(x), 2)));
 plot(x => floor(li(x)));
 plot(x => Math.ceil(x / (ln(x) - 1)));
-maybeprimes = maybePrimes(200000, []);
+maybeprimes = maybePrimes(maxn);
 plot(count(maybeprimes));
 
 //plot(x => cgamma(complex(0, x)).y);
@@ -127,42 +128,35 @@ const clamp = (v, mn, mx) => Math.max(mn, Math.min(mx, v));
 const relumin = (x) => x >= 0 ? undefined : x;
 const relumax = (x) => x <= 0 ? undefined : x;
 function gcd(a, b) {
-    while (b) {
-        [a, b] = [b, a % b];
-    }
-    return a;
+  a = a < 0 ? -a : a;
+  b = b < 0 ? -b : b;
+  while (b !== 0) {
+    const t = a % b;
+    a = b;
+    b = t;
+  }
+  return a;
 }
-function primes(n) {
-  const seq = [];
+
+function factorial(n) {
+  if (n <= 0) return [];
+  const seq = [1];
   for (let i = 2; i <= n; i++) {
-    let isPrime = true;
-    for (let j = 2; j * j <= i; j++) {
-      if (i % j === 0) { isPrime = false; break; }
-    }
-    if (isPrime) { seq.push(i); }
+    seq.push(seq[seq.length - 1] * i);
   }
   return seq;
 }
 
-function factorial(n) {
-    if (n <= 0) return [];
-    const seq = [1];
-    for (let i = 2; i <= n; i++) {
-      seq.push(seq[seq.length - 1] * i);
-    }
-    return seq;
-}
-
 function isprime(x) {
-    if (x < 2) { return false; }
-    if (x <= 3) { return true; }
-    if (x % 2 === 0 || x % 3 === 0) { return false; }
-    for (let i = 5; i * i <= x; i += 6) {
-        if (x % i === 0 || x % (i + 2) === 0) {
-          return false;
-        }
+  if (x < 2) { return false; }
+  if (x <= 3) { return true; }
+  if (x % 2 === 0 || x % 3 === 0) { return false; }
+  for (let i = 5; i * i <= x; i += 6) {
+    if (x % i === 0 || x % (i + 2) === 0) {
+      return false;
     }
-    return true;
+  }
+  return true;
 }
 
 // According to this logic, almost all functions can be turned into prime versions. like fib-prime or mersenne-prime with add condition
@@ -395,34 +389,122 @@ function btn(minusKey, plusKey) {
   return num;
 }
 
-const SEED = Math.random();
-function rand(n) {
-  let x = (n * 374761393 + SEED * 668265263) >>> 0;
+function modPow(base, exp, mod) {
+  let result = 1;
+  base %= mod;
+  while (exp > 0) {
+    if (exp & 1) {
+      result = (result * base) % mod;
+    }
+    base = (base * base) % mod;
+    exp >>= 1;
+  }
+  return result;
+}
+
+function isMillerPrime(n, primes= [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97]) {
+  if (n < 2) return false;
+  for (const p of primes) {
+    if (n % p === 0) {
+      return n === p;
+    }
+  }
+  let d = n - 1;
+  let s = 0;
+  while ((d & 1) === 0) {
+    d /= 2;
+    s++;
+  }
+  const witnesses = [2, 325, 9375, 28178, 450775, 9780504, 1795265022];
+  for (let a of witnesses) {
+    a %= n;
+    if (a === 0) continue;
+    let x = modPow(a, d, n);
+    if (x === 1 || x === n - 1) {
+      continue;
+    }
+    let composite = true;
+    for (let r = 1; r < s; r++) {
+      x = (x * x) % n;
+      if (x === n - 1) {
+        composite = false;
+        break;
+      }
+    }
+    if (composite) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function rand(n, seed) {
+  let x = (n * 374761393 + seed * 668265263) >>> 0;
   x = ((x ^ (x >>> 13)) * 1274126177) >>> 0;
   x = (x ^ (x >>> 16)) >>> 0;
   return x / 4294967296;
 }
 
-function isMaybePrime(n, primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]) {
+function isMaybePrime(n, primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41], seed = 18) {
   const num = Math.ceil(Math.abs(n));
   if (num <= 1) return false;
   if (primes.includes(num)) return true;
   for (const prime of primes) {
     if (num % prime === 0) return false;
   }
-  let W = 1;
+  let w = 1;
   for (const prime of primes) {
-    W *= (1 - 1 / prime);
+    w *= (1 - 1 / prime);
   }
-  return rand(n) < 1 / Math.log(num) / W;
+  return rand(n, seed) < 1 / (Math.log(num) * w);
 }
 
-function maybePrimes(n, primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]){
+function maybePrimes(n, primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41], seed = 18) {
   let arr = [];
-  for (let i = 0; i < n; i++) { 
-    if (isMaybePrime(i, primes)) { arr.push(i) }
+  for (let i = 0; i < n; i++) {
+    if (isMaybePrime(i, primes, seed)) { 
+      arr.push(i);
+    }
+  }
+  /*let upperBound = [];
+  let lowerBound= [];
+  for (let x = 2; x <= arr.length; x++) {
+    upperBound.push(Math.ceil(x * (Math.log(x) + Math.log(Math.log(x)) - 0.8)));
+    lowerBound.push(Math.ceil(x * (Math.log(x) + Math.log(Math.log(x)) - 1.0)));
+  }*/
+  return arr;
+}
+
+function millerPrimes(n, primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]) {
+  let arr = [];
+  for (let i = 0; i < n; i++) {
+    if (isMillerPrime(i, primes)) {
+      arr.push(i);
+    }
   }
   return arr;
+}
+
+function seqPrimes(n, primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]) {
+  let arr = [];
+  for (let i = 0; i < n; i++) {
+    if (isprime(i)) {
+      arr.push(i);
+    }
+  }
+  return arr;
+}
+
+function primes(n) {
+  const seq = [];
+  for (let i = 2; i <= n; i++) {
+    let isPrime = true;
+    for (let j = 2; j * j <= i; j++) {
+      if (i % j === 0) { isPrime = false; break; }
+    }
+    if (isPrime) { seq.push(i); }
+  }
+  return seq;
 }
 
 function count(arr) {
