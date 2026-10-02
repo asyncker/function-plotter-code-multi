@@ -43,6 +43,10 @@ plot(x => Math.ceil(x / (ln(x) - 1)));
 maybeprimes = maybePrimes(maxn);
 plot(count(maybeprimes));
 
+primes.unshift(0);
+const toprime = bspline(primes); // linear
+plot(x => sin(toprime(x)));
+
 //plot(x => cgamma(complex(0, x)).y);
 
 /*for (let i = 0; i < primes.length / 100; i++) {
@@ -159,7 +163,6 @@ function isprime(x) {
   return true;
 }
 
-// According to this logic, almost all functions can be turned into prime versions. like fib-prime or mersenne-prime with add condition
 function primorial(n) {
   if (n <= 0) return [];
   const seq = [1];
@@ -544,6 +547,52 @@ function toarray(f, n = 200000, start = 0) {
     result.push(f(start + i));
   }
   return result;
+}
+
+const toSampler = (f) => Array.isArray(f) ? (n) => (n < f.length ? (n >= 0 ? f[n] : -f[-n]) : 0) : f;
+
+const steps = (f) => {
+  const g = toSampler(f);
+  return (x) => {
+    const n = floor(x);
+    return floor(g(n));
+  };
+};
+
+const linear = (f) => {
+  const g = toSampler(f);
+  return (x) => {
+    const n = floor(x);
+    const t = x - n;
+    const y1 = g(n);
+    const y2 = g(n + 1);
+    return y1 * (1 - t) + y2 * t;
+  };
+};
+
+const bspline = (f) => {
+  const g = toSampler(f);
+  return (x) => {
+    const n = Math.floor(x) - 1;
+    const t = x - n - 1;
+    const t2 = t * t, t3 = t2 * t;
+    const b0 = (1 - t) ** 3 / 6;
+    const b1 = (3*t3 - 6*t2 + 4) / 6;
+    const b2 = (-3*t3 + 3*t2 + 3*t + 1) / 6;
+    const b3 = t3 / 6;
+    return g(n)*b0 + g(n+1)*b1 + g(n+2)*b2 + g(n+3)*b3;
+  };
+};
+
+function arrayto(arr) {
+  if (!arr || !arr.length) return () => 0;
+  const n = arr.length;
+  return (x) => {
+    if (!Number.isFinite(x)) return 0;
+    const i = floor(x);
+    if (i < 0 || i >= n) return 0;
+    return arr[i];
+  };
 }
 
 function li(x) {
